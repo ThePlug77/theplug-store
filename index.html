@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("apply-discount").addEventListener("click", () => {
     const code = document.getElementById("discount").value.trim().toLowerCase();
     const subtotal = parseFloat(document.getElementById("subtotal").textContent.replace("€",""));
-    const shipping = 4.99;
+    const shipping = 6.99;
     let discount = 0;
     if (code === "theplug10") {
       discount = subtotal * 0.1;
