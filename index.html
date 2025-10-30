@@ -296,10 +296,12 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
   function submitAndPay(baseLink) {
+    
+  // Open Revolut page immediately (mobile-safe)
+  const payWindow = window.open(baseLink, "_blank");
+
   const total = parseFloat(document.getElementById("total").textContent.replace("€","").trim());
   document.getElementById("order-summary").value = getCartSummary();
-  document.getElementById('cart-total').textContent = `Total: ${formatCurrency(total)}`;
-
 
   fetch(form.action, {
     method: "POST",
@@ -307,13 +309,15 @@ document.addEventListener("DOMContentLoaded", () => {
     headers: { 'Accept': 'application/json' }
   }).then(response => {
     if (response.ok) {
-      // ✅ Opens Revolut or PayPal with amount automatically filled
-      window.open(baseLink, "_blank");
-      alert("✅ Shipping details sent! Please complete payment in the new tab.");
-      form.reset();
+      if (payWindow) {
+        payWindow.focus();
+      }
+      alert("✅ Shipping details sent! Please complete payment in the opened tab.");
     } else {
       alert("❌ Error sending details. Try again.");
     }
+  }).catch(() => {
+    alert("❌ Network error. Please try again.");
   });
 }
 
