@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>THE PLUG — Clothes & Shoes</title>
+
+  <header class="site-header">
+    <div class="logo-container">
+      <img src="images/theplug.jpeg" alt="THE PLUG LOGO" class="logo">
+    <h1>THE PLUG</h1>
+    </div>
+    <div class="cart" onclick="toggleCart()">
+      🛒 <span id="cart-count">0</span>
+    </div>
+  </header>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h2>Clothes & Shoes — UK & IE shipping</h2>
+      <p>Small-batch, quality pieces. Tap any product to view details or buy.</p>
+      <a class="cta" href="#shop">Browse the shop</a>
+    </div>
+  </section>
+
+  <section id="shop" class="wrap shop-grid">
+    <!-- Products will load here -->
+  </section>
+
+  <section id="about" class="wrap info">
+    <h3>About YourBrand</h3>
+    <p>Selling Top Quality Clothes and Shoes for Great Prices.</p>
+  </section>
+
+  <!-- 📜 Refund Policy Section -->
+  <section id="refund" class="wrap info">
+    <h3>Refund & Return Policy</h3>
+    <p>
+      All sales are final unless the item you received is not as described.
+      If you have an issue with your order, please contact us within 7 days of delivery
+      at <a href="mailto:irejoshua6@gmail.com">irejoshua6@gmail.com</a> with your order details.
+    </p>
+    <p>
+      Refunds or exchanges are only processed for defective or incorrect items.
+      We do not accept returns for size issues or change of mind.
+    </p>
+  </section>
+
+  <section id="contact" class="wrap info">
+    <h3>Contact</h3>
+    <p>Questions? Email <a href="mailto:irejoshua6@gmail.com">irejoshua6@gmail.com</a> or message on Depop.</p>
+  </section>
+</main>
+
+
+<!-- Overlay -->
+<div id="cart-overlay"></div>
+
+<!-- 🛒 Cart Drawer -->
+<section id="cart-section">
+  <h2>Your Cart</h2>
+  <div id="cart-items"></div>
+
+  <div class="order-summary">
+    <p>Subtotal: <span id="subtotal">€0.00</span></p>
+    <p>Shipping: <span id="shipping">€5.99</span></p>
+    <div class="discount-row">
+      <input type="text" id="discount" placeholder="Discount code or gift card">
+      <button id="apply-discount" type="button">Apply</button>
+    </div>
+    <p><strong>Total:</strong> <span id="total">€0.00</span></p>
+  </div>
+
+  <button id="checkout-btn">Checkout</button>
+
+  <!-- 🚚 Shipping Form -->
+  <form id="shipping-form" action="https://formspree.io/f/xblplpva" method="POST" style="display:none;">
+    <h3>Shipping Information</h3>
+    <input type="text" name="name" placeholder="Full Name" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="text" name="address" placeholder="Street Address" required>
+    <input type="text" name="city" placeholder="City" required>
+    <input type="text" name="postcode" placeholder="Postcode" required>
+    <select name="country" required>
+      <option value="">Select Country</option>
+      <option value="United Kingdom">United Kingdom</option>
+      <option value="Ireland">Ireland</option>
+      <option value="United States">United States</option>
+      <option value="Canada">Canada</option>
+      <option value="Germany">Germany</option>
+      <option value="France">France</option>
+      <option value="Australia">Australia</option>
+    </select>
+
+    <input type="hidden" name="order_summary" id="order-summary">
+    <input type="hidden" name="cart_total" id="cart-total">
+
+    <div class="payment-buttons">
+      <button type="button" id="checkout-revolut">Pay with Revolut</button>
+      <button type="button" id="checkout-paypal">Pay with PayPal</button>
+    </div>
+  </form>
+</section>
+
+<!-- ================= STYLES ================= -->
+<style>
+  #cart-section {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 350px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -3px 0 10px rgba(0,0,0,0.2);
+    padding: 20px;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 1000;
+  }
+  #cart-section.show { right: 0; }
+
+  #cart-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 900;
+    display: none;
+  }
+  #cart-overlay.show { display: block; }
+
+  .cart-item { margin-bottom: 10px; }
+  .cart-item button { margin-left: 10px; }
+  .discount-row { display: flex; margin-bottom: 10px; }
+  .discount-row input { flex: 1; margin-right: 5px; }
+</style>
+
+<!-- ================= SCRIPTS ================= -->
+
+<script>
+// 🌍 GLOBAL SETTINGS
+const STORE_CURRENCY = "€";          // 👈 change this anytime (£, $, etc.)
+const CURRENCY_CODE = "EUR";         // 👈 3-letter code used for PayPal/Revolut
+
+// Helper function to format numbers
+function formatCurrency(amount) {
+  return `${STORE_CURRENCY}${amount.toFixed(2)}`;
+}
+</script>
+
+
+<script>
+// 🧵 Select Size Button (works for dynamic products)
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('size-btn')) {
+    const button = e.target;
+    const card = button.closest('.card');
+    const allBtns = card.querySelectorAll('.size-btn');
+    allBtns.forEach(btn => btn.classList.remove('selected'));
+    button.classList.add('selected');
+  }
+});
+
+// 🛍 Load Products
+fetch('products.json')
+  .then(res => res.json())
+  .then(products => {
+    const shop = document.querySelector('.shop-grid');
+    products.forEach(p => {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.innerHTML = `
+        <img src="${p.image}" alt="${p.title}">
+        <div class="card-body">
+          <h4>${p.title}</h4>
+          <p class="price">€${p.price}</p>
+          <div class="sizes">
+            ${p.sizes.map(size => `<button class="size-btn">${size}</button>`).join('')}
+          </div>
+          <p class="desc">${p.desc}</p>
+          <div class="actions">
+            <button class="btn add-cart">Add to Cart</button>
+          </div>
+        </div>`;
+      
+      const addBtn = card.querySelector('.add-cart');
+      addBtn.addEventListener('click', () => {
+        const selectedSize = card.querySelector('.size-btn.selected');
+        const size = selectedSize ? selectedSize.textContent : 'Default';
+        addToCart(p.title, p.price, size);
+        toggleCart();
+      });
+
+      shop.appendChild(card);
+    });
+  })
+  .catch(err => {
+    console.error('Error loading products.json', err);
+    document.querySelector('.shop-grid').innerHTML = '<p>Products failed to load.</p>';
+  });
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+function addToCart(title, price, size = "Default") {
+  const existing = cart.find(item => item.title === title && item.size === size);
+  if (existing) existing.qty++;
+  else cart.push({ title, price, qty: 1, size });
+  saveCart();
+  updateCart();
+}
+
+function saveCart() {
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+function updateCart() {
+  const count = cart.reduce((a, c) => a + c.qty, 0);
+  document.getElementById("cart-count").textContent = count; // ✅ fix count
+  const list = document.getElementById("cart-items");
+  const subtotal = cart.reduce((a, c) => a + c.price * c.qty, 0);
+  document.getElementById("subtotal").textContent = "€" + subtotal.toFixed(2);
+  const total = subtotal + 5.99;
+  document.getElementById("total").textContent = "€" + total.toFixed(2);
+  list.innerHTML = cart.map((item, i) => `
+    <div class="cart-item">
+      ${item.title} (${item.size}) x${item.qty} - €${(item.price * item.qty).toFixed(2)}
+      <button onclick="removeFromCart(${i})">✕</button>
+    </div>
+  `).join("");
+}
+
+function removeFromCart(i) {
+  cart.splice(i, 1);
+  saveCart();
+  updateCart();
+}
+
+function toggleCart() {
+  const cartSection = document.getElementById("cart-section");
+  const overlay = document.getElementById("cart-overlay");
+  cartSection.classList.toggle("show");
+  overlay.classList.toggle("show");
+  updateCart();
+}
+
+document.getElementById("cart-overlay").addEventListener("click", toggleCart);
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("apply-discount").addEventListener("click", () => {
+    const code = document.getElementById("discount").value.trim().toLowerCase();
+    const subtotal = parseFloat(document.getElementById("subtotal").textContent.replace("€",""));
+    const shipping = 4.99;
+    let discount = 0;
+    if (code === "theplug10") {
+      discount = subtotal * 0.1;
+      alert("✅ 10% discount applied!");
+    } else if (code) {
+      alert("❌ Invalid code");
+    }
+    const newTotal = (subtotal - discount + shipping).toFixed(2);
+    document.getElementById("total").textContent = "€" + newTotal;
+  });
+
+  document.getElementById("checkout-btn").addEventListener("click", () => {
+    const form = document.getElementById("shipping-form");
+    form.style.display = "block";
+    document.getElementById("checkout-btn").style.display = "none";
+  });
+
+  const form = document.getElementById("shipping-form");
+  const revolutBtn = document.getElementById("checkout-revolut");
+  const paypalBtn = document.getElementById("checkout-paypal");
+
+  function getCartSummary() {
+    return cart.map((item, i) =>
+      `${i+1}. ${item.title} (${item.size}) x${item.qty} - €${(item.price*item.qty).toFixed(2)}`
+    ).join("\n");
+  }
+
+ 
+  //🌍 GLOBAL SETTINGS
+  const STORE_CURRENCY = "€";   // Change here if you ever switch currencies (£, $, etc.)
+  const CURRENCY_CODE = "EUR";  // ISO code for Revolut/PayPal
+
+
+  // Format helper
+  function formatCurrency(amount) {
+  return `${STORE_CURRENCY}${amount.toFixed(2)}`;
+}
+
+  function submitAndPay(baseLink) {
+  const total = parseFloat(document.getElementById("total").textContent.replace("€","").trim());
+  document.getElementById("order-summary").value = getCartSummary();
+  document.getElementById('cart-total').textContent = `Total: ${formatCurrency(total)}`;
+
+
+  fetch(form.action, {
+    method: "POST",
+    body: new FormData(form),
+    headers: { 'Accept': 'application/json' }
+  }).then(response => {
+    if (response.ok) {
+      // ✅ Opens Revolut or PayPal with amount automatically filled
+      window.open(baseLink, "_blank");
+      alert("✅ Shipping details sent! Please complete payment in the new tab.");
+      form.reset();
+    } else {
+      alert("❌ Error sending details. Try again.");
+    }
+  });
+}
+
+  revolutBtn.addEventListener("click", () => submitAndPay("https://revolut.me/joshzee7"));
+  paypalBtn.addEventListener("click", () => submitAndPay("https://paypal.me/joshzee77"));
+
+  updateCart();
+});
+</script>
+
+
+
+</body>
+</html>
