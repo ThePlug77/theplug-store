@@ -259,10 +259,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const shipping = 6.99;
     let discount = 0;
     if (code === "theplug10") {
-      discount = subtotal * -0.1;
+      discount = subtotal * 0.1;
       alert("✅ 10% discount applied!");
     } else if (code === "theplug2025") {
-      discount = subtotal * -0.20;
+      discount = subtotal * 0.20;
       alert("✅ 20% discount applied!");
     } else if (code) {
       alert("❌ Invalid code");
